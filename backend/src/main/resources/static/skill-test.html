@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能系统测试页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        .section h2 {
+            color: #4a5568;
+            margin-top: 0;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .skill-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .skill-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            background: #667eea;
+            color: white;
+        }
+        .skill-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+        }
+        .skill-card p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .test-area {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .response-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffe0e0;
+            border-left-color: #e53e3e;
+        }
+        .success {
+            background: #e0ffe0;
+            border-left-color: #38a169;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-style: italic;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(15, 30px);
+            gap: 2px;
+            margin: 20px auto;
+            width: fit-content;
+            background: #8b4513;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: #deb887;
+            border: 1px solid #8b4513;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+        .cell:hover {
+            background: #f0e68c;
+            transform: scale(1.1);
+        }
+        .cell.black {
+            background: #000;
+            color: white;
+        }
+        .cell.white {
+            background: #fff;
+            color: black;
+        }
+        .status-bar {
+            text-align: center;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 五子棋技能系统测试</h1>
+        
+        <div class="status-bar" id="statusBar">
+            欢迎使用技能系统测试页面 - 后端服务状态: <span id="serviceStatus">检测中...</span>
+        </div>
+
+        <div class="section">
+            <h2>🎯 游戏棋盘</h2>
+            <div class="game-board" id="gameBoard"></div>
+            <div style="text-align: center;">
+                <button onclick="resetBoard()">重置棋盘</button>
+                <button onclick="randomBoard()">随机布局</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⚡ 技能效果类型</h2>
+            <div id="skillTypes" class="skill-grid">
+                <div class="loading">正在加载技能类型...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 技能测试区域</h2>
+            <div class="test-area">
+                <div class="input-group">
+                    <label for="userId">用户ID:</label>
+                    <input type="number" id="userId" value="1" min="1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="gameId">游戏ID:</label>
+                    <input type="number" id="gameId" value="1" min="1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="skillId">技能ID:</label>
+                    <input type="number" id="skillId" value="1" min="1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="targetX">目标位置 X:</label>
+                    <input type="number" id="targetX" value="7" min="0" max="14">
+                </div>
+                
+                <div class="input-group">
+                    <label for="targetY">目标位置 Y:</label>
+                    <input type="number" id="targetY" value="7" min="0" max="14">
+                </div>
+
+                <div style="text-align: center;">
+                    <button onclick="testUseSkill()" id="useSkillBtn">使用技能</button>
+                    <button onclick="getUserSkills()">获取用户技能</button>
+                    <button onclick="clearResponse()">清空响应</button>
+                </div>
+                
+                <div id="responseArea" class="response-area" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8081';
+        let gameState = Array(15).fill().map(() => Array(15).fill(0));
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServiceStatus();
+            loadSkillTypes();
+            initializeBoard();
+        });
+
+        // 检查服务状态
+        async function checkServiceStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/skill/all`);
+                if (response.ok) {
+                    document.getElementById('serviceStatus').innerHTML = '<span style="color: #4ade80;">✅ 正常运行</span>';
+                } else {
+                    document.getElementById('serviceStatus').innerHTML = '<span style="color: #f87171;">❌ 服务异常</span>';
+                }
+            } catch (error) {
+                document.getElementById('serviceStatus').innerHTML = '<span style="color: #f87171;">❌ 连接失败</span>';
+            }
+        }
+
+        // 加载技能类型
+        async function loadSkillTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/api/skill/effect-types`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displaySkillTypes(data);
+                } else {
+                    document.getElementById('skillTypes').innerHTML = '<div class="error">加载技能类型失败</div>';
+                }
+            } catch (error) {
+                document.getElementById('skillTypes').innerHTML = '<div class="error">连接服务器失败</div>';
+            }
+        }
+
+        // 显示技能类型
+        function displaySkillTypes(types) {
+            const container = document.getElementById('skillTypes');
+            if (!types || types.length === 0) {
+                container.innerHTML = '<div class="error">暂无技能类型数据</div>';
+                return;
+            }
+            
+            container.innerHTML = types.map(type => `
+                <div class="skill-card" onclick="selectSkillType('${type}')">
+                    <h3>${type}</h3>
+                    <p>点击选择此技能类型</p>
+                </div>
+            `).join('');
+        }
+
+        // 初始化棋盘
+        function initializeBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            
+            for (let y = 0; y < 15; y++) {
+                for (let x = 0; x < 15; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.onclick = () => toggleCell(x, y);
+                    board.appendChild(cell);
+                }
+            }
+            updateBoardDisplay();
+        }
+
+        // 切换格子状态
+        function toggleCell(x, y) {
+            gameState[y][x] = (gameState[y][x] + 1) % 3;
+            updateBoardDisplay();
+        }
+
+        // 更新棋盘显示
+        function updateBoardDisplay() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const state = gameState[y][x];
+                
+                cell.className = 'cell';
+                if (state === 1) {
+                    cell.classList.add('black');
+                    cell.textContent = '●';
+                } else if (state === 2) {
+                    cell.classList.add('white');
+                    cell.textContent = '●';
+                } else {
+                    cell.textContent = '';
+                }
+            });
+        }
+
+        // 重置棋盘
+        function resetBoard() {
+            gameState = Array(15).fill().map(() => Array(15).fill(0));
+            updateBoardDisplay();
+        }
+
+        // 随机布局
+        function randomBoard() {
+            gameState = gameState.map(row => 
+                row.map(() => Math.floor(Math.random() * 3))
+            );
+            updateBoardDisplay();
+        }
+
+        // 测试使用技能
+        async function testUseSkill() {
+            const userId = document.getElementById('userId').value;
+            const gameId = document.getElementById('gameId').value;
+            const skillId = document.getElementById('skillId').value;
+            const targetX = document.getElementById('targetX').value;
+            const targetY = document.getElementById('targetY').value;
+
+            if (!userId || !gameId || !skillId) {
+                showResponse('请填写完整的用户信息', 'error');
+                return;
+            }
+
+            const requestData = {
+                skillId: parseInt(skillId),
+                targetPosition: { x: parseInt(targetX), y: parseInt(targetY) },
+                params: {
+                    gameState: gameState,
+                    currentPlayer: 1
+                },
+                userId: parseInt(userId),
+                gameId: parseInt(gameId)
+            };
+
+            showResponse('正在发送技能使用请求...', 'loading');
+            document.getElementById('useSkillBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/skill/use`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(JSON.stringify(result, null, 2), 'success');
+                    // 如果有新的游戏状态，更新棋盘
+                    if (result.gameState) {
+                        gameState = result.gameState;
+                        updateBoardDisplay();
+                    }
+                } else {
+                    showResponse(`错误: ${result.message || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showResponse(`网络错误: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('useSkillBtn').disabled = false;
+            }
+        }
+
+        // 获取用户技能
+        async function getUserSkills() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                showResponse('请输入用户ID', 'error');
+                return;
+            }
+
+            showResponse('正在获取用户技能列表...', 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/skill/user/${userId}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(JSON.stringify(result, null, 2), 'success');
+                } else {
+                    showResponse(`错误: ${result.message || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showResponse(`网络错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 显示响应
+        function showResponse(message, type) {
+            const responseArea = document.getElementById('responseArea');
+            responseArea.style.display = 'block';
+            responseArea.className = `response-area ${type}`;
+            responseArea.textContent = message;
+        }
+
+        // 清空响应
+        function clearResponse() {
+            const responseArea = document.getElementById('responseArea');
+            responseArea.style.display = 'none';
+            responseArea.textContent = '';
+        }
+
+        // 选择技能类型
+        function selectSkillType(type) {
+            // 这里可以根据技能类型设置默认的skillId
+            console.log('选择的技能类型:', type);
+        }
+    </script>
+</body>
+</html>

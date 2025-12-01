@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原生WebSocket测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .messages {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>原生WebSocket测试</h1>
+        
+        <div id="status" class="status disconnected">未连接</div>
+        
+        <div class="input-group">
+            <input type="text" id="userId" placeholder="用户ID" value="1">
+            <input type="text" id="serverUrl" placeholder="WebSocket服务器地址" value="ws://localhost:8080/ws">
+            <button id="connectBtn">连接</button>
+            <button id="disconnectBtn" disabled>断开连接</button>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="输入消息" disabled>
+            <button id="sendBtn" disabled>发送消息</button>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="gameId" placeholder="游戏ID" value="1">
+            <button id="joinGameBtn" disabled>加入游戏</button>
+            <button id="pingBtn" disabled>发送心跳</button>
+        </div>
+        
+        <div class="messages" id="messages"></div>
+    </div>
+
+    <script>
+        let socket = null;
+        const statusElement = document.getElementById('status');
+        const userIdElement = document.getElementById('userId');
+        const serverUrlElement = document.getElementById('serverUrl');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const gameIdElement = document.getElementById('gameId');
+        const joinGameBtn = document.getElementById('joinGameBtn');
+        const pingBtn = document.getElementById('pingBtn');
+        const messagesElement = document.getElementById('messages');
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusElement.textContent = '已连接';
+                statusElement.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                joinGameBtn.disabled = false;
+                pingBtn.disabled = false;
+            } else {
+                statusElement.textContent = '未连接';
+                statusElement.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                joinGameBtn.disabled = true;
+                pingBtn.disabled = true;
+            }
+        }
+
+        function addMessage(message, type = 'info') {
+            const messageElement = document.createElement('div');
+            messageElement.style.marginBottom = '5px';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'sent' ? '#007bff' : type === 'received' ? '#28a745' : '#6c757d';
+            
+            messageElement.innerHTML = `<span style="color: #6c757d">[${timestamp}]</span> <span style="color: ${color}">${message}</span>`;
+            messagesElement.appendChild(messageElement);
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+
+        function connect() {
+            try {
+                const userId = userIdElement.value.trim();
+                if (!userId) {
+                    addMessage('请输入用户ID', 'error');
+                    return;
+                }
+                
+                // 构建WebSocket URL，包含userId参数
+                const baseUrl = serverUrlElement.value.trim();
+                const separator = baseUrl.includes('?') ? '&' : '?';
+                const wsUrl = `${baseUrl}${separator}userId=${userId}`;
+                
+                addMessage(`尝试连接到: ${wsUrl}`, 'info');
+                
+                socket = new WebSocket(wsUrl);
+                
+                socket.onopen = function(event) {
+                    updateStatus(true);
+                    addMessage('连接已建立', 'info');
+                };
+                
+                socket.onmessage = function(event) {
+                    addMessage(`收到消息: ${event.data}`, 'received');
+                };
+                
+                socket.onclose = function(event) {
+                    updateStatus(false);
+                    addMessage(`连接已关闭: ${event.code} ${event.reason}`, 'info');
+                    socket = null;
+                };
+                
+                socket.onerror = function(error) {
+                    addMessage(`错误: ${error}`, 'error');
+                };
+            } catch (error) {
+                addMessage(`连接错误: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+            }
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+                addMessage(`发送消息: ${message}`, 'sent');
+                messageInput.value = '';
+            }
+        }
+
+        function sendJoinGame() {
+            const gameId = gameIdElement.value.trim();
+            const userId = userIdElement.value.trim();
+            
+            if (!gameId || !userId) {
+                addMessage('请输入游戏ID和用户ID', 'error');
+                return;
+            }
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: "join_game",
+                    gameId: gameId,
+                    userId: userId
+                };
+                
+                socket.send(JSON.stringify(message));
+                addMessage(`发送加入游戏请求: gameId=${gameId}, userId=${userId}`, 'sent');
+            }
+        }
+
+        function sendPing() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: "ping"
+                };
+                
+                socket.send(JSON.stringify(message));
+                addMessage('发送心跳消息', 'sent');
+            }
+        }
+
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        sendBtn.addEventListener('click', sendMessage);
+        joinGameBtn.addEventListener('click', sendJoinGame);
+        pingBtn.addEventListener('click', sendPing);
+        
+        messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 初始化状态
+        updateStatus(false);
+        addMessage('页面已加载，请输入用户ID并点击连接按钮连接WebSocket服务器', 'info');
+    </script>
+</body>
+</html>
