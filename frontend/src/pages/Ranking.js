@@ -242,16 +242,6 @@ const Ranking = () => {
     loadRankingData(1, pagination.pageSize, rankingType, value);
   };
 
-  // 获取排名标签颜色
-  const getRankColor = (rank) => {
-    switch (rank) {
-      case 1: return '#ffd700';
-      case 2: return '#c0c0c0';
-      case 3: return '#cd7f32';
-      default: return undefined;
-    }
-  };
-
   // 获取段位信息
   const getRankInfo = (rankLevel) => {
     const ranks = [

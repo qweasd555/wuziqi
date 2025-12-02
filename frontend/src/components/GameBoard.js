@@ -1,6 +1,6 @@
 // 修复后的GameBoard.js文件
 import React, { useEffect, useRef, useState } from 'react';
-import { Layout, Card, Button, Typography, Space, Badge, Modal, message, Tag } from 'antd';
+import { Layout, Card, Button, Typography, Space, Modal, message, Tag } from 'antd';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';

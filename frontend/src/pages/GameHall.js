@@ -29,7 +29,6 @@ import {
 import styled from 'styled-components';
 import { useAuth } from '../contexts/AuthContext';
 import { gameAPI, userAPI } from '../services/api';
-import { GameMode, GameType } from '../utils/constants';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;

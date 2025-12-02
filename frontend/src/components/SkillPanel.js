@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Typography, Space, Tooltip, Modal, message } from 'antd';
+import { Card, Button, Typography, Tooltip, Modal, message } from 'antd';
 import { 
   ThunderboltOutlined, 
   SafetyCertificateOutlined, 
@@ -9,10 +9,9 @@ import {
   ToolOutlined
 } from '@ant-design/icons';
 import styled from 'styled-components';
-import { skillAPI } from '../services/api';
 import { SkillType } from '../utils/constants';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const SkillPanelContainer = styled(Card)`
   .ant-card-head {
