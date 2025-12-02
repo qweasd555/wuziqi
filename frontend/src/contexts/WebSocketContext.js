@@ -13,7 +13,7 @@ export const WebSocketProvider = ({ children }) => {
 
   // 初始化WebSocket连接
   useEffect(() => {
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS(process.env.REACT_APP_WS_URL || 'http://localhost:8081/ws-stomp');
     const stompClient = new Client({
       webSocketFactory: () => socket,
       debug: (str) => {
