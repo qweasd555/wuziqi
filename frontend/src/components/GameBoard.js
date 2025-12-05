@@ -1,9 +1,10 @@
 // 修复后的GameBoard.js文件
 import React, { useEffect, useRef, useState } from 'react';
-import { Layout, Card, Button, Typography, Space, Modal, message, Tag } from 'antd';
+import { Layout, Card, Button, Typography, Space, Modal, message, Tag, Spin } from 'antd';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { gameAPI } from '../services/api';
 import SkillPanel from './SkillPanel';
 
 const { Header, Content, Sider } = Layout;
@@ -19,38 +20,64 @@ const GameBoard = ({ gameId }) => {
     player2: null,
     winner: null
   });
-  const [skillModalVisible, setSkillModalVisible] = useState(false); 
+  const [skillModalVisible, setSkillModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true); 
   const { user } = useAuth();
-  const { sendMessage, lastMessage } = useWebSocket();
+  const { sendMove, sendUseSkill, startGame, lastMessage } = useWebSocket();
   const navigate = useNavigate();
 
   // 初始化游戏
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId) {
+      console.error('Game ID is undefined');
+      message.error('游戏ID无效');
+      setLoading(false);
+      return;
+    }
 
+    console.log('Loading game with ID:', gameId);
+    setLoading(true);
+    
     // 获取游戏状态
-    fetch('/api/game/' + gameId)
-      .then(res => res.json())
+    gameAPI.getGame(gameId)
       .then(data => {
+        console.log('Game data received:', data);
         // 从后端数据中提取玩家ID
         const player1Id = data.player1 ? data.player1.id : null;
         const player2Id = data.player2 ? data.player2.id : null;
+        
+        // 解析棋盘状态
+        let board = Array(15).fill().map(() => Array(15).fill(0));
+        if (data.boardState) {
+          try {
+            const parsedBoard = JSON.parse(data.boardState);
+            if (Array.isArray(parsedBoard) && parsedBoard.length === 15) {
+              board = parsedBoard;
+            }
+          } catch (e) {
+            console.warn('Failed to parse board state, using empty board');
+          }
+        }
         
         setGameState(prev => ({
           ...prev,
           ...data,
           player1: player1Id,
-          player2: player2Id
+          player2: player2Id,
+          board: board,
+          gameActive: data.status === 'IN_PROGRESS'
         }));
       })
       .catch(err => {
         console.error('获取游戏状态失败', err);
-        message.error('获取游戏状态失败');
+        message.error('获取游戏状态失败: ' + (err.message || '未知错误'));
+        // 初始化空棋盘作为后备
+        const board = Array(15).fill().map(() => Array(15).fill(0));
+        setGameState(prev => ({ ...prev, board }));
+      })
+      .finally(() => {
+        setLoading(false);
       });
-
-    // 初始化棋盘
-    const board = Array(15).fill().map(() => Array(15).fill(0));
-    setGameState(prev => ({ ...prev, board }));
   }, [gameId]);
 
   // 处理WebSocket消息
@@ -77,6 +104,13 @@ const GameBoard = ({ gameId }) => {
           gameActive: false,
           winner: data.winner
         }));
+      } else if (data.event === 'gameStarted') {
+        // 游戏开始事件
+        setGameState(prev => ({
+          ...prev,
+          gameActive: true
+        }));
+        message.success('游戏已开始！');
       }
     } catch (error) {
       console.error('处理WebSocket消息失败', error);
@@ -204,20 +238,15 @@ const GameBoard = ({ gameId }) => {
     if (gameState.board[row][col] !== 0) return;
 
     // 发送移动请求
-    sendMessage({
-      type: 'MOVE',
-      gameId: gameId,
-      userId: user.id,
-      position: row * 15 + col
-    });
+    sendMove(gameId, user.id, row * 15 + col);
   };
 
   // 判断当前玩家是否是自己
   const isMyTurn = () => {
-    if (!gameState.gameActive) return false;
+    if (!gameState.gameActive || !user?.id) return false;
 
     // 判断当前玩家是黑棋还是白棋
-    const isPlayer1 = gameState.player1 === user.id;
+    const isPlayer1 = String(gameState.player1) === String(user.id);
 
     // 如果是玩家1，当前玩家为1时轮到自己；如果是玩家2，当前玩家为2时轮到自己
     return (isPlayer1 && gameState.currentPlayer === 1) ||
@@ -228,18 +257,21 @@ const GameBoard = ({ gameId }) => {
   const handleUseSkill = (skillType) => {
     setSkillModalVisible(false);
     
-    sendMessage({
-      type: 'SKILL',
-      gameId: gameId,
-      userId: user.id,
-      skillType: skillType
-    });
+    sendUseSkill(gameId, user.id, skillType);
   };
 
   // 退出游戏
   const handleExitGame = () => {
     navigate('/lobby');
   };
+
+  if (loading) {
+    return (
+      <Layout style={{ height: '100vh', justifyContent: 'center', alignItems: 'center' }}>
+        <Spin size="large" tip="加载游戏中..." />
+      </Layout>
+    );
+  }
 
   return (
     <Layout style={{ height: '100vh' }}>
@@ -275,16 +307,30 @@ const GameBoard = ({ gameId }) => {
                     </Tag>
                   )}
                 </div>
+                {!gameState.gameActive && !gameState.winner && (
+                  <Button 
+                    type="primary" 
+                    onClick={() => {
+                      startGame(gameId, user.id).catch(err => {
+                        console.error('开始游戏失败', err);
+                        message.error('开始游戏失败: ' + (err.message || '未知错误'));
+                      });
+                    }}
+                    style={{ width: '100%', marginTop: '10px' }}
+                  >
+                    开始游戏
+                  </Button>
+                )}
                 <div>
                   <Text strong>玩家1 (黑棋): </Text>
-                  <Tag color={gameState.player1 === user.id ? 'blue' : 'default'}>
-                    {gameState.player1 === user.id ? '你' : '对手'}
+                  <Tag color={String(gameState.player1) === String(user?.id) ? 'blue' : 'default'}>
+                    {gameState.player1 == null ? 'AI' : (String(gameState.player1) === String(user?.id) ? '你' : '对手')}
                   </Tag>
                 </div>
                 <div>
                   <Text strong>玩家2 (白棋): </Text>
-                  <Tag color={gameState.player2 === user.id ? 'blue' : 'default'}>
-                    {gameState.player2 === user.id ? '你' : '对手'}
+                  <Tag color={String(gameState.player2) === String(user?.id) ? 'blue' : 'default'}>
+                    {gameState.player2 == null ? 'AI' : (String(gameState.player2) === String(user?.id) ? '你' : '对手')}
                   </Tag>
                 </div>
               </Space>

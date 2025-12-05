@@ -208,7 +208,7 @@ const GameHall = () => {
       setCreateModalVisible(false);
       
       // 跳转到游戏页面
-      navigate(`/game/${game.id}`);
+      navigate(`/game/${game.gameId}`);
     } catch (error) {
       console.error('Failed to create game:', error);
       message.error('创建游戏失败：' + (error.message || '未知错误'));

@@ -125,13 +125,18 @@ export const WebSocketProvider = ({ children }) => {
   };
 
   // 发送技能使用
-  const useSkill = (gameId, userId, skillId) => {
+  const sendUseSkill = (gameId, userId, skillId) => {
     return sendGameAction(gameId, 'useSkill', { userId, skillId });
   };
 
   // 发送投降
   const surrender = (gameId, userId) => {
     return sendGameAction(gameId, 'surrender', { userId });
+  };
+
+  // 开始游戏
+  const startGame = (gameId, userId) => {
+    return sendGameAction(gameId, 'startGame', { userId });
   };
 
   const value = {
@@ -141,8 +146,9 @@ export const WebSocketProvider = ({ children }) => {
     subscribeToGame,
     unsubscribeFromGame,
     sendMove,
-    useSkill,
-    surrender
+    sendUseSkill,
+    surrender,
+    startGame
   };
 
   return (

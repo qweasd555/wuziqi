@@ -32,6 +32,12 @@ public class WebSocketController {
     @Autowired
     private WebSocketSessionManager sessionManager;
 
+    @Autowired
+    private com.skillfive.backend.service.GameService gameService;
+
+    @Autowired
+    private com.skillfive.backend.service.AiService aiService;
+
     /**
      * 游戏消息处理
      * 客户端发送到 /app/game/message
@@ -56,6 +62,9 @@ public class WebSocketController {
             case "status":
                 // 处理状态更新消息
                 return handleStatusMessage(message);
+            case "startGame":
+                // 处理开始游戏消息
+                return handleStartGameMessage(message);
             default:
                 return new ApiResponse<>(200, "收到消息", message);
         }
@@ -65,9 +74,34 @@ public class WebSocketController {
      * 处理移动消息
      */
     private ApiResponse<?> handleMoveMessage(GameMessage message) {
-        // 广播移动消息给游戏内所有用户
-        broadcastToGame(message.getGameId(), "move", message);
-        return new ApiResponse<>(200, "移动成功", message);
+        try {
+            Long gameId = Long.valueOf(message.getGameId());
+            Long userId = Long.valueOf(message.getUserId());
+            Integer position = message.getPosition();
+            
+            if (position == null && message.getData() != null && message.getData().containsKey("position")) {
+                position = Integer.valueOf(message.getData().get("position").toString());
+            }
+            
+            if (position != null) {
+                // 执行玩家移动
+                gameService.makeMove(gameId, userId, position);
+                
+                // 检查是否需要AI移动
+                if (aiService.shouldAiMove(gameId)) {
+                    // 异步执行AI移动，避免阻塞WebSocket线程太久
+                    // 这里简单起见直接同步调用，因为AI计算目前比较快
+                    aiService.makeAiMove(gameId);
+                }
+                
+                return new ApiResponse<>(200, "移动成功", message);
+            } else {
+                return new ApiResponse<>(400, "缺少位置信息", null);
+            }
+        } catch (Exception e) {
+            logger.error("处理移动消息失败", e);
+            return new ApiResponse<>(500, "移动失败: " + e.getMessage(), null);
+        }
     }
 
     /**
@@ -95,6 +129,37 @@ public class WebSocketController {
         // 广播状态更新给游戏内所有用户
         broadcastToGame(message.getGameId(), "status", message);
         return new ApiResponse<>(200, "状态更新成功", message);
+    }
+
+    /**
+     * 处理开始游戏消息
+     */
+    private ApiResponse<?> handleStartGameMessage(GameMessage message) {
+        try {
+            Long gameId = Long.valueOf(message.getGameId());
+            Long userId = Long.valueOf(message.getUserId());
+            
+            // 获取游戏并更新状态
+            com.skillfive.backend.entity.Game game = gameService.findById(gameId).orElse(null);
+            if (game == null) {
+                return new ApiResponse<>(404, "游戏不存在", null);
+            }
+            
+            // 更新游戏状态为进行中
+            game.setStatus(com.skillfive.backend.enums.GameStatus.IN_PROGRESS);
+            gameService.updateGame(game);
+            
+            // 广播游戏开始消息
+            Map<String, Object> startData = new ConcurrentHashMap<>();
+            startData.put("userId", userId);
+            startData.put("timestamp", System.currentTimeMillis());
+            broadcastToGame(message.getGameId(), "gameStarted", startData);
+            
+            return new ApiResponse<>(200, "游戏开始成功", startData);
+        } catch (Exception e) {
+            logger.error("开始游戏失败", e);
+            return new ApiResponse<>(500, "开始游戏失败: " + e.getMessage(), null);
+        }
     }
 
     /**
@@ -172,8 +237,17 @@ public class WebSocketController {
         private String gameId;
         private Map<String, Object> data;
         private Long timestamp;
-        
+        private Integer position; // 添加位置字段
+
         // Getters and Setters
+        public Integer getPosition() {
+            return position;
+        }
+
+        public void setPosition(Integer position) {
+            this.position = position;
+        }
+
         public String getType() {
             return type;
         }
