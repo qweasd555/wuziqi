@@ -166,30 +166,34 @@ public class WebSocketController {
      * 广播消息到指定游戏
      */
     private void broadcastToGame(String gameId, String eventType, Object data) {
-        if (gameId != null) {
-            Map<String, String> gameUsers = sessionManager.getGameUsersWithRoles(gameId);
-            
-            // 创建广播消息
-            Map<String, Object> broadcastMessage = new ConcurrentHashMap<>();
-            broadcastMessage.put("event", eventType);
-            broadcastMessage.put("gameId", gameId);
-            broadcastMessage.put("data", data);
-            broadcastMessage.put("timestamp", System.currentTimeMillis());
-            
-            // 发送给游戏内的所有用户
-            gameUsers.forEach((userId, role) -> {
-                try {
-                    messagingTemplate.convertAndSendToUser(
-                            userId, 
-                            "/queue/game", 
-                            broadcastMessage
-                    );
-                } catch (Exception e) {
-                    logger.error("向用户 {} 发送消息失败", userId, e);
-                }
-            });
-        }
+    if (gameId == null) return;
+
+    Map<String, String> gameUsers = sessionManager.getGameUsersWithRoles(gameId);
+    if (gameUsers == null || gameUsers.isEmpty()) {
+        // 没有在线用户或sessionManager返回null，先直接返回
+        logger.info("broadcastToGame: no users for gameId {}", gameId);
+        return;
     }
+
+    Map<String, Object> broadcastMessage = new ConcurrentHashMap<>();
+    broadcastMessage.put("event", eventType);
+    broadcastMessage.put("gameId", gameId);
+    broadcastMessage.put("data", data);
+    broadcastMessage.put("timestamp", System.currentTimeMillis());
+
+    gameUsers.forEach((userId, role) -> {
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    userId,
+                    "/queue/game",
+                    broadcastMessage
+            );
+        } catch (Exception e) {
+            logger.error("向用户 {} 发送消息失败", userId, e);
+        }
+    });
+}
+
 
     /**
      * 发送私人消息给指定用户
