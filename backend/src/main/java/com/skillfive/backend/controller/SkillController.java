@@ -165,7 +165,7 @@ public class SkillController {
             gameState.setBoardState(updatedGame.getBoardState());
             gameState.setCurrentPlayerId(updatedGame.getCurrentPlayerId());
             gameState.setLastMove(updatedGame.getLastMove());
-            gameState.setGameStatus(updatedGame.getStatus());
+            gameState.setGameStatus(updatedGame.getStatus().name());
             
             String effectDescription = skillManagerService.getSkillDescription(skill);
             
