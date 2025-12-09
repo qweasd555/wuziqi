@@ -1,6 +1,7 @@
 package com.skillfive.backend.service.impl;
 
 import com.skillfive.backend.entity.Game;
+import com.skillfive.backend.enums.GameStatus;
 import com.skillfive.backend.repository.GameRepository;
 import com.skillfive.backend.service.AiService;
 import com.skillfive.backend.service.GameService;
@@ -247,7 +248,7 @@ public class AiServiceImpl implements AiService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
-        if (!"IN_PROGRESS".equals(game.getStatus()) || game.getCurrentPlayer() != 2) {
+        if (!GameStatus.IN_PROGRESS.equals(game.getStatus()) || game.getCurrentPlayer() != 2) {
             return game;
         }
 
@@ -261,7 +262,7 @@ public class AiServiceImpl implements AiService {
         int[] move = getBestMove(boardState, GameUtil.PLAYER2, GameUtil.PLAYER1);
         if (move == null) {
             game.setWinner("draw");
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             Game savedGame = gameRepository.save(game);
             // 广播游戏结束
             gameService.broadcastGameUpdate(savedGame);
@@ -278,11 +279,11 @@ public class AiServiceImpl implements AiService {
         // 检查获胜
         if (checkWin(new String(board), GameUtil.PLAYER2)) {
             game.setWinner("player2");
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setEndTime(java.time.LocalDateTime.now());
         } else if (checkDraw(new String(board))) {
             game.setWinner("draw");
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setEndTime(java.time.LocalDateTime.now());
         } else {
             game.setCurrentPlayer(1);
@@ -304,7 +305,7 @@ public class AiServiceImpl implements AiService {
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
         return game.getType() == com.skillfive.backend.enums.GameType.VS_AI &&
-               "IN_PROGRESS".equals(game.getStatus()) &&
+               GameStatus.IN_PROGRESS.equals(game.getStatus()) &&
                game.getCurrentPlayer() == 2;
     }
 

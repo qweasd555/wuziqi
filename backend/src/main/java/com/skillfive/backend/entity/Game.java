@@ -1,6 +1,7 @@
 package com.skillfive.backend.entity;
 
 import com.skillfive.backend.enums.GameMode;
+import com.skillfive.backend.enums.GameStatus;
 import com.skillfive.backend.enums.GameType;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -46,7 +47,10 @@ public class Game {
     /**
      * 游戏状态
      */
-    private String status = "PENDING"; // PENDING, IN_PROGRESS, FINISHED
+    @Enumerated(EnumType.STRING)
+@Column(nullable = false)
+private GameStatus status;
+ // PENDING, IN_PROGRESS, FINISHED
     
     /**
      * 创建时间

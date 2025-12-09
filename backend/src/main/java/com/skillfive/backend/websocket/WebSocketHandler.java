@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import com.skillfive.backend.enums.GameStatus;
 
 /**
  * WebSocket连接处理器
@@ -240,8 +241,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 if (gameOpt.isPresent()) {
                     Game game = gameOpt.get();
                     
-                    // 如果游戏是PENDING状态且只有一个玩家，尝试加入游戏
-                    if ("PENDING".equals(game.getStatus()) && game.getPlayer2() == null) {
+                    // 如果游戏是WAITING状态且只有一个玩家，尝试加入游戏
+                    if (game.getStatus() == GameStatus.WAITING && game.getPlayer2() == null) {
                         try {
                             // 调用joinGame方法加入游戏
                             gameService.joinGame(gameLongId, Long.parseLong(userId));

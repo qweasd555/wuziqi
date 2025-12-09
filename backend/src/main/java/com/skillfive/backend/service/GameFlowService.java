@@ -1,6 +1,7 @@
 package com.skillfive.backend.service;
 
 import com.skillfive.backend.entity.Game;
+import com.skillfive.backend.enums.GameStatus;
 import com.skillfive.backend.entity.User;
 import com.skillfive.backend.enums.GameType;
 import com.skillfive.backend.repository.GameRepository;
@@ -55,7 +56,7 @@ public class GameFlowService {
             game.setPlayer2(player2);
         }
         
-        game.setStatus("WAITING");
+        game.setStatus(GameStatus.WAITING);
         game.setBoardState(GameUtil.createEmptyBoard());
         game.setCurrentPlayer(1);
         game.setCreatedTime(LocalDateTime.now());
@@ -72,11 +73,11 @@ public class GameFlowService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
-        if (!"WAITING".equals(game.getStatus())) {
+        if (game.getStatus() != GameStatus.WAITING) {
             throw new RuntimeException("游戏状态错误，无法开始");
         }
 
-        game.setStatus("IN_PROGRESS");
+        game.setStatus(GameStatus.IN_PROGRESS);
         game.setStartTime(LocalDateTime.now());
         game.setUpdatedTime(LocalDateTime.now());
 
@@ -99,7 +100,7 @@ public class GameFlowService {
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
         // 验证游戏状态
-        if (!"IN_PROGRESS".equals(game.getStatus())) {
+        if (game.getStatus() != GameStatus.IN_PROGRESS) {
             throw new RuntimeException("游戏不在进行中");
         }
 
@@ -126,11 +127,11 @@ public class GameFlowService {
         // 检查获胜条件
         if (GameUtil.hasWinner(newBoardState, playerSymbol)) {
             game.setWinner(getWinnerKey(game, playerId));
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setEndTime(LocalDateTime.now());
         } else if (isDraw(newBoardState)) {
             game.setWinner("draw");
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setEndTime(LocalDateTime.now());
         } else {
             // 切换玩家
@@ -152,10 +153,10 @@ public class GameFlowService {
                   savedGame.getType(), savedGame.getStatus(), savedGame.getCurrentPlayer());
         log.info("条件检查 - VS_AI: {}, IN_PROGRESS: {}, currentPlayer == 2: {}", 
                   savedGame.getType() == GameType.VS_AI, 
-                  "IN_PROGRESS".equals(savedGame.getStatus()), 
+                  game.getStatus() == GameStatus.IN_PROGRESS,
                   savedGame.getCurrentPlayer() == 2);
         if (savedGame.getType() == GameType.VS_AI && 
-            "IN_PROGRESS".equals(savedGame.getStatus()) && 
+           game.getStatus() == GameStatus.IN_PROGRESS && 
             savedGame.getCurrentPlayer() == 2) {
             
             log.info("触发AI移动 - 游戏ID: {}", savedGame.getId());
@@ -184,7 +185,7 @@ public class GameFlowService {
 
         game.setBoardState(GameUtil.createEmptyBoard());
         game.setCurrentPlayer(1);
-        game.setStatus("IN_PROGRESS");
+        game.setStatus(GameStatus.IN_PROGRESS);
         game.setWinner(null);
         game.setEndTime(null);
         game.setStartTime(LocalDateTime.now());
@@ -292,6 +293,7 @@ public class GameFlowService {
     private boolean isAiTurn(Game game) {
         return game.getType() == GameType.VS_AI && 
                game.getCurrentPlayer() == 2 && 
-               "IN_PROGRESS".equals(game.getStatus());
+              game.getStatus() == GameStatus.IN_PROGRESS;
+
     }
 }

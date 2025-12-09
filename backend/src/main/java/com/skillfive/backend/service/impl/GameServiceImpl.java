@@ -1,6 +1,7 @@
 package com.skillfive.backend.service.impl;
 
 import com.skillfive.backend.entity.Game;
+import com.skillfive.backend.enums.GameStatus;
 import com.skillfive.backend.entity.User;
 import com.skillfive.backend.enums.GameMode;
 import com.skillfive.backend.enums.GameType;
@@ -52,7 +53,7 @@ public class GameServiceImpl implements GameService {
         game.setPlayer1(player1);
         game.setMode(mode);
         game.setType(type);
-        game.setStatus("PENDING");
+        game.setStatus(GameStatus.WAITING);
         game.setBoardState(GameUtil.createEmptyBoard()); // 使用正确的空棋盘初始化
         game.setCurrentPlayer(1);
         
@@ -77,7 +78,7 @@ public class GameServiceImpl implements GameService {
             game.setPlayer2(player2);
         }
         
-        game.setStatus("IN_PROGRESS");
+        game.setStatus(GameStatus.IN_PROGRESS);
         
         // 保存游戏状态
         Game savedGame = gameRepository.save(game);
@@ -168,12 +169,12 @@ public class GameServiceImpl implements GameService {
         // 检查是否有获胜者
         if (GameUtil.hasWinner(newBoardState, currentSymbol)) {
             // 游戏结束，设置获胜者
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setWinner(game.getCurrentPlayer() == 1 ? "player1" : "player2");
             game.setEndTime(java.time.LocalDateTime.now());
         } else if (GameUtil.isBoardFull(newBoardState)) {
             // 平局
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             game.setWinner("draw");
             game.setEndTime(java.time.LocalDateTime.now());
         } else {
@@ -245,7 +246,7 @@ public class GameServiceImpl implements GameService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
-        game.setStatus("FINISHED");
+        game.setStatus(GameStatus.FINISHED);
         if (winnerId != null) {
             if (winnerId.equals(game.getPlayer1().getId())) {
                 game.setWinner("player1");
@@ -279,12 +280,12 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public Optional<Game> findWaitingGame() {
-        return gameRepository.findFirstByStatusAndPlayer2IsNullOrderByStartTime("PENDING");
+        return gameRepository.findFirstByStatusAndPlayer2IsNullOrderByStartTime(GameStatus.WAITING.name());
     }
 
     @Override
     public List<Game> findAvailableGames(GameMode mode) {
-        return gameRepository.findByStatusAndModeAndPlayer2IsNull("PENDING", mode);
+        return gameRepository.findByStatusAndModeAndPlayer2IsNull(GameStatus.WAITING.name(), mode);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.skillfive.backend.service.impl;
 
 import com.skillfive.backend.entity.Game;
+import com.skillfive.backend.enums.GameStatus;
 import com.skillfive.backend.repository.GameRepository;
 import com.skillfive.backend.service.AiService;
 import com.skillfive.backend.service.GameService;
@@ -287,9 +288,10 @@ public class EnhancedAiServiceImpl implements AiService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
-        if (!"IN_PROGRESS".equals(game.getStatus()) || game.getCurrentPlayer() != 2) {
-            return game;
-        }
+        if (game.getStatus() != GameStatus.IN_PROGRESS || game.getCurrentPlayer() != 2) {
+    return game;
+}
+
 
         String boardState = game.getBoardState();
         if (boardState == null || boardState.isEmpty() || "{}".equals(boardState)) {
@@ -308,7 +310,7 @@ public class EnhancedAiServiceImpl implements AiService {
         int[] move = getBestMove(boardState, GameUtil.PLAYER2, GameUtil.PLAYER1);
         if (move == null) {
             game.setWinner("draw");
-            game.setStatus("FINISHED");
+            game.setStatus(GameStatus.FINISHED);
             return gameRepository.save(game);
         }
 
@@ -323,11 +325,12 @@ public class EnhancedAiServiceImpl implements AiService {
         // 检查获胜条件
         if (GameUtil.hasWinner(newBoardState, GameUtil.PLAYER2)) {
             game.setWinner("player2");
-            game.setStatus("FINISHED");
+           game.setStatus(GameStatus.FINISHED);
+
             game.setEndTime(java.time.LocalDateTime.now());
         } else if (isDraw(newBoardState)) {
             game.setWinner("draw");
-            game.setStatus("FINISHED");
+           game.setStatus(GameStatus.FINISHED);
             game.setEndTime(java.time.LocalDateTime.now());
         } else {
             game.setCurrentPlayer(1); // 切换回玩家1
@@ -347,7 +350,7 @@ public class EnhancedAiServiceImpl implements AiService {
                 .orElseThrow(() -> new RuntimeException("游戏不存在"));
 
         return game.getType() == com.skillfive.backend.enums.GameType.VS_AI &&
-               "IN_PROGRESS".equals(game.getStatus()) &&
+               game.getStatus() == GameStatus.IN_PROGRESS &&
                game.getCurrentPlayer() == 2;
     }
 
