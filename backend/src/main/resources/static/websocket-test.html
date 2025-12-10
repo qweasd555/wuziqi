@@ -5,6 +5,7 @@
     <title>WebSocket STOMP 测试</title>
 </head>
 <body>
+
 <h2>WebSocket / Game 测试</h2>
 
 <button onclick="connect()">连接 WebSocket</button>
@@ -12,8 +13,9 @@
 
 <pre id="log"></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<!-- SockJS + STOMP -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
 
 <script>
 let stompClient = null;
@@ -23,32 +25,32 @@ function log(msg) {
 }
 
 function connect() {
-    const socket = new SockJS("http://localhost:8080/ws-stomp");
+    const socket = new SockJS("/ws-stomp");  // ★ 正确写法
     stompClient = Stomp.over(socket);
 
     stompClient.connect({}, function() {
-        log("WebSocket 已连接！");
+        log("STOMP 已连接");
 
-        stompClient.subscribe("/topic/game", function(message) {
-            log("收到广播消息: " + message.body);
+        stompClient.subscribe("/topic/game", function(msg) {
+            log("收到广播：" + msg.body);
         });
     });
 }
 
 function sendMove() {
     if (!stompClient) {
-        log("尚未连接 WebSocket");
+        log("未连接 WebSocket");
         return;
     }
 
-    let move = {
+    const move = {
         x: 3,
         y: 3,
-        userId: "user123"
+        userId: "123"
     };
 
     stompClient.send("/app/game/move", {}, JSON.stringify(move));
-    log("已发送落子消息");
+    log("已发送落子");
 }
 </script>
 

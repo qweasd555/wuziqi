@@ -1,4 +1,6 @@
-package com.skillfive.backend.controller;
+package com.skillfive.backend.websocket;
+
+
 
 import com.skillfive.backend.service.GameFlowService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
