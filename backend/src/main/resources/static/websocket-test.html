@@ -1,72 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>简单WebSocket测试</title>
     <meta charset="UTF-8">
+    <title>WebSocket STOMP 测试</title>
 </head>
 <body>
-    <h1>简单WebSocket测试</h1>
-    <div>
-        <button onclick="connect()">连接</button>
-        <button onclick="disconnect()">断开</button>
-        <button onclick="sendPing()">发送Ping</button>
-    </div>
-    <div id="messages"></div>
+<h2>WebSocket / Game 测试</h2>
 
-    <script>
-        let socket = null;
-        
-        function connect() {
-            console.log("尝试连接WebSocket...");
-            socket = new WebSocket('ws://localhost:8080/ws?userId=simpleTest');
-            
-            socket.onopen = function(event) {
-                console.log('WebSocket连接已建立');
-                addMessage('连接已建立');
-            };
-            
-            socket.onmessage = function(event) {
-                console.log('收到消息:', event.data);
-                addMessage('收到消息: ' + event.data);
-            };
-            
-            socket.onclose = function(event) {
-                console.log('WebSocket连接已关闭');
-                addMessage('连接已关闭');
-            };
-            
-            socket.onerror = function(error) {
-                console.error('WebSocket错误:', error);
-                addMessage('错误: ' + error);
-            };
-        }
-        
-        function disconnect() {
-            if (socket !== null) {
-                socket.close();
-                socket = null;
-            }
-        }
-        
-        function sendPing() {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ 
-                    type: 'ping', 
-                    userId: 'simpleTest',
-                    timestamp: new Date().getTime()
-                }));
-                addMessage('发送Ping消息');
-            } else {
-                addMessage('WebSocket未连接');
-            }
-        }
-        
-        function addMessage(message) {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.textContent = new Date().toLocaleTimeString() + ': ' + message;
-            messagesDiv.appendChild(messageElement);
-        }
-    </script>
+<button onclick="connect()">连接 WebSocket</button>
+<button onclick="sendMove()">发送落子</button>
+
+<pre id="log"></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+let stompClient = null;
+
+function log(msg) {
+    document.getElementById("log").textContent += msg + "\n";
+}
+
+function connect() {
+    const socket = new SockJS("http://localhost:8080/ws-stomp");
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function() {
+        log("WebSocket 已连接！");
+
+        stompClient.subscribe("/topic/game", function(message) {
+            log("收到广播消息: " + message.body);
+        });
+    });
+}
+
+function sendMove() {
+    if (!stompClient) {
+        log("尚未连接 WebSocket");
+        return;
+    }
+
+    let move = {
+        x: 3,
+        y: 3,
+        userId: "user123"
+    };
+
+    stompClient.send("/app/game/move", {}, JSON.stringify(move));
+    log("已发送落子消息");
+}
+</script>
+
 </body>
 </html>

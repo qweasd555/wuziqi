@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="UTF-8"><title>WebSocket 测试</title></head>
+<body>
+<h3>WebSocket 对弈测试</h3>
+
+<button onclick="connect()">连接 WS</button>
+<button onclick="joinGame()">加入游戏</button>
+<button onclick="makeMove()">落子</button>
+
+<pre id="log"></pre>
+
+<script>
+let ws;
+const userId = Math.floor(Math.random() * 10000); // 模拟用户
+const gameId = 1; // 你可手动改成数据库已有对局ID
+
+function log(msg) {
+  document.getElementById('log').textContent += msg + "\n";
+}
+
+function connect() {
+  ws = new WebSocket("ws://localhost:8080/ws/game");
+  ws.onopen = () => log("WebSocket 已连接");
+  ws.onmessage = e => log("收到消息: " + e.data);
+  ws.onerror = e => log("错误: " + e);
+  ws.onclose = () => log("连接已关闭");
+}
+
+function joinGame() {
+  const msg = {
+    action: "join",
+    gameId: gameId,
+    userId: userId
+  };
+  ws.send(JSON.stringify(msg));
+  log("发送加入游戏请求");
+}
+
+function makeMove() {
+  const msg = {
+    action: "move",
+    gameId: gameId,
+    userId: userId,
+    x: Math.floor(Math.random()*15),
+    y: Math.floor(Math.random()*15)
+  };
+  ws.send(JSON.stringify(msg));
+  log("落子中…");
+}
+</script>
+</body>
+</html>

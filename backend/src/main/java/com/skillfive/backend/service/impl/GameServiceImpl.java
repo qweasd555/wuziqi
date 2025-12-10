@@ -277,16 +277,17 @@ public class GameServiceImpl implements GameService {
     public List<Game> findActiveGamesByUserId(Long userId) {
         return gameRepository.findActiveGamesByUserId(userId);
     }
-
     @Override
     public Optional<Game> findWaitingGame() {
-        return gameRepository.findFirstByStatusAndPlayer2IsNullOrderByStartTime(GameStatus.WAITING.name());
-    }
+        return gameRepository.findFirstByStatusAndPlayer2IsNullOrderByStartTime(GameStatus.WAITING);
+}
 
     @Override
     public List<Game> findAvailableGames(GameMode mode) {
-        return gameRepository.findByStatusAndModeAndPlayer2IsNull(GameStatus.WAITING.name(), mode);
-    }
+        return gameRepository.findByStatusAndModeAndPlayer2IsNull(GameStatus.WAITING, mode);
+}
+
+
 
     @Override
     public Game createGame(Long player1Id, GameMode mode) {
